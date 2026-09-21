@@ -1,0 +1,51 @@
+assistant:
+  name: Jarvis
+
+llm:
+  provider: ollama
+  host: http://localhost:11434
+  model: llama3.1
+  temperature: 0.2
+  max_tool_iterations: 8
+
+memory:
+  provider: sqlite
+  path: data/jarvis.db
+  conversation_limit: 40
+
+permissions:
+  # Auto-allow clipboard edits etc. DANGEROUS actions still always require confirm.
+  modification_actions: allow
+  dangerous_actions: confirm
+
+logging:
+  level: WARNING
+  structured: false
+
+speech:
+  enabled: false
+  stt: whisper_cpp
+  # small ≈ much better accent accuracy than base; use "medium" for max quality on M4 Pro
+  stt_model: small
+  language: en
+  tts: kokoro
+  tts_voice: af_heart
+  barge_in: true
+  sample_rate: 16000
+  silence_seconds: 1.2
+  max_listen_seconds: 25.0
+  vad_threshold: 0.4
+  pre_roll_seconds: 0.5
+  beam_size: 5
+  fresh_session: true
+
+tools:
+  enabled:
+    - get_current_time
+    - get_system_information
+    - get_battery_status
+    - get_running_apps
+    - open_application
+    - close_application
+    - get_clipboard
+    - set_clipboard
