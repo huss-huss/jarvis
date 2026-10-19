@@ -6,7 +6,10 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-import numpy as np
+import pytest
+
+np = pytest.importorskip("numpy", reason="voice tests need the `voice` extra: pip install -e '.[voice]'")
+pytest.importorskip("sounddevice", reason="voice tests need the `voice` extra")
 
 from jarvis.agent.orchestrator import AgentOrchestrator
 from jarvis.audio.base import AudioBuffer, STTProvider, Transcript, TTSProvider, VADProvider
