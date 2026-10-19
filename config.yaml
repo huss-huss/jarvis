@@ -12,6 +12,10 @@ memory:
   provider: sqlite
   path: data/jarvis.db
   conversation_limit: 40
+  # ollama + nomic-embed-text (free/local). Falls back to hashing if model missing.
+  embeddings: ollama
+  embedding_model: nomic-embed-text
+  semantic_top_k: 5
 
 permissions:
   # "confirm": ask before actions that change things (e.g. closing an app).
@@ -29,8 +33,9 @@ speech:
   # small ≈ much better accent accuracy than base; use "medium" for max quality on M4 Pro
   stt_model: small
   language: en
-  tts: kokoro
-  tts_voice: af_heart
+  # macos_say avoids PortAudio ticks when speaking; set kokoro + af_heart to try neural TTS again
+  tts: macos_say
+  tts_voice: Samantha
   barge_in: true
   sample_rate: 16000
   silence_seconds: 1.2
@@ -39,6 +44,63 @@ speech:
   pre_roll_seconds: 0.5
   beam_size: 5
   fresh_session: true
+
+wake_word:
+  enabled: true
+  phrase: hey_jarvis
+  backend: openwakeword
+  threshold: 0.5
+  inference_framework: onnx
+  debounce_seconds: 2.0
+  # Requires macOS Accessibility permission for global hotkeys
+  hotkey: "<ctrl>+<alt>+j"
+  acknowledge: "Yes?"
+
+files:
+  # Places JARVIS may read/write. Not the whole disk — add more roots as you need.
+  roots:
+    - "."                 # this JARVIS project
+    - "~/Desktop"
+    - "~/Documents"
+    - "~/Downloads"
+    - "~/Desktop/Work"    # your other projects
+  max_read_bytes: 200000
+
+terminal:
+  enabled: true
+  # Shell starts here; file tools still use files.roots above.
+  cwd: "~"
+  timeout_seconds: 30
+  # Empty allowlist → built-in safe defaults (ls, git status/log/diff, etc.)
+  allowlist: []
+
+browser:
+  enabled: true
+  headless: true
+
+rag:
+  enabled: true
+  chunk_size: 800
+  chunk_overlap: 120
+  top_k: 5
+  default_project: jarvis
+
+productivity:
+  enabled: true
+  timezone: local
+  reminder_poll_seconds: 2
+
+proactive:
+  enabled: true
+  morning_briefing_enabled: true
+  morning_briefing_hour: 8
+  morning_briefing_minute: 0
+  project_monitor_enabled: true
+  project_monitor_path: "."
+  project_monitor_interval_minutes: 60
+  job_poll_seconds: 5
+  # Keep false — core stays local/$0
+  mcp_enabled: false
 
 tools:
   enabled:
@@ -50,3 +112,47 @@ tools:
     - close_application
     - get_clipboard
     - set_clipboard
+    - remember_fact
+    - recall_memory
+    - forget_fact
+    - list_memories
+    - list_files
+    - find_file
+    - read_file
+    - create_file
+    - move_file
+    - copy_file
+    - search_files
+    - summarize_file
+    - delete_file
+    - run_command
+    - open_browser
+    - navigate_browser
+    - get_page_text
+    - click_browser
+    - type_browser
+    - close_browser
+    - ingest_document
+    - ingest_folder
+    - search_docs
+    - list_ingested
+    - switch_project
+    - list_projects
+    - create_reminder
+    - list_reminders
+    - cancel_reminder
+    - create_task
+    - list_tasks
+    - complete_task
+    - add_calendar_event
+    - list_calendar
+    - get_briefing
+    - list_jobs
+    - run_job
+    - set_job_enabled
+    - mcp_status
+
+ui:
+  host: 127.0.0.1
+  port: 8742
+  open_browser: true
