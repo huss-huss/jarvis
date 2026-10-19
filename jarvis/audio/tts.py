@@ -77,6 +77,7 @@ class KokoroTTS(TTSProvider):
             return
         try:
             sink = io.StringIO()
+            chunks: list[np.ndarray] = []
             with self._lock:
                 with contextlib.redirect_stdout(sink), contextlib.redirect_stderr(sink):
                     stream = self._pipeline(cleaned, voice=self.voice)
@@ -84,16 +85,20 @@ class KokoroTTS(TTSProvider):
                         if self._stop.is_set():
                             break
                         samples = _to_numpy(audio)
-                        if samples.size == 0:
-                            continue
-                        sd.play(samples, self.sample_rate, blocking=True)
-                        if self._stop.is_set():
-                            sd.stop()
-                            break
+                        if samples.size:
+                            chunks.append(samples)
             noise = sink.getvalue()
             if "words count mismatch" in noise.lower() and not self._stop.is_set():
                 # Synthesis was unreliable — speak cleanly via say instead
                 self._fallback.speak(cleaned)
+                return
+            if not chunks or self._stop.is_set():
+                return
+            # One continuous write + trailing silence so PortAudio doesn't click at stop.
+            waveform = _fade_edges(np.concatenate(chunks), sample_rate=self.sample_rate)
+            pad = np.zeros(int(self.sample_rate * 0.05), dtype=np.float32)
+            waveform = np.concatenate([waveform, pad])
+            _play_exclusive(waveform, self.sample_rate, self._stop)
         except Exception as exc:  # noqa: BLE001
             log.warning("kokoro_speak_failed_fallback_say", error=str(exc))
             if not self._stop.is_set():
@@ -105,6 +110,29 @@ class KokoroTTS(TTSProvider):
         self._fallback.stop()
 
 
+class AudioExclusiveTTS(TTSProvider):
+    """
+    Pause the wake-word mic around every speak().
+    Speaking while the wake InputStream is open causes a rapid ta-ta-ta on macOS —
+    and that hits *every* reply, not just the wake ack.
+    """
+
+    def __init__(self, inner: TTSProvider, pause, resume) -> None:
+        self._inner = inner
+        self._pause = pause
+        self._resume = resume
+
+    def speak(self, text: str) -> None:
+        self._pause()
+        try:
+            self._inner.speak(text)
+        finally:
+            self._resume()
+
+    def stop(self) -> None:
+        self._inner.stop()
+
+
 def _to_numpy(audio: Any) -> np.ndarray:
     if hasattr(audio, "detach"):
         audio = audio.detach().cpu().numpy()
@@ -112,7 +140,36 @@ def _to_numpy(audio: Any) -> np.ndarray:
     return arr.reshape(-1)
 
 
-def create_tts(provider: str = "kokoro", **kwargs: Any) -> TTSProvider:
+def _fade_edges(samples: np.ndarray, fade_ms: float = 8.0, sample_rate: int = 24000) -> np.ndarray:
+    """Tiny fade in/out so PortAudio start/stop doesn't click."""
+    out = np.asarray(samples, dtype=np.float32).copy()
+    n = int(sample_rate * fade_ms / 1000.0)
+    if n <= 0 or out.size < n * 2:
+        return out
+    ramp = np.linspace(0.0, 1.0, n, dtype=np.float32)
+    out[:n] *= ramp
+    out[-n:] *= ramp[::-1]
+    return out
+
+
+def _play_exclusive(waveform: np.ndarray, sample_rate: int, stop: threading.Event) -> None:
+    """Write-based OutputStream — more reliable than sd.play while avoiding underrun ticks."""
+    data = np.asarray(waveform, dtype=np.float32).reshape(-1, 1)
+    with sd.OutputStream(
+        samplerate=sample_rate,
+        channels=1,
+        dtype="float32",
+        blocksize=2048,
+        latency="high",
+    ) as stream:
+        step = 4096
+        for i in range(0, len(data), step):
+            if stop.is_set():
+                break
+            stream.write(data[i : i + step])
+
+
+def create_tts(provider: str = "macos_say", **kwargs: Any) -> TTSProvider:
     if provider == "macos_say":
         return MacSayTTS(**{k: v for k, v in kwargs.items() if k in {"voice", "rate"}})
     if provider == "kokoro":

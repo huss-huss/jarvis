@@ -1,6 +1,14 @@
-"""Audio package — STT / TTS / VAD / mic."""
+"""Audio package — STT / TTS / VAD / mic / wake word."""
 
-from jarvis.audio.base import AudioBuffer, STTProvider, Transcript, TTSProvider, VADProvider
+from jarvis.audio.base import (
+    AudioBuffer,
+    STTProvider,
+    Transcript,
+    TTSProvider,
+    VADProvider,
+    WakeEvent,
+    WakeWordProvider,
+)
 from jarvis.audio.session import VoiceSession
 
 __all__ = [
@@ -10,4 +18,6 @@ __all__ = [
     "Transcript",
     "VADProvider",
     "VoiceSession",
+    "WakeEvent",
+    "WakeWordProvider",
 ]
