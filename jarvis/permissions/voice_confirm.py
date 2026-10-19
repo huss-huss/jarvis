@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
-from jarvis.audio.base import TTSProvider
+if TYPE_CHECKING:  # importing jarvis.audio pulls in numpy/sounddevice (the optional `voice` extra)
+    from jarvis.audio.base import TTSProvider
 
 YES_WORDS = {
     "yes",
