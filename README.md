@@ -84,10 +84,10 @@ Current tools:
 |---|---|---|
 | `get_current_time`, `get_system_information`, `get_battery_status`, `get_running_apps`, `get_clipboard` | safe | read-only |
 | `open_application` | safe | |
-| `close_application` | safe | Quits, then checks the app actually stopped. Refuses system processes (Finder, Dock, WindowServer, loginwindow...). It can force-quit a stuck app, so unsaved work in that app may be lost |
+| `close_application` | modification | Asks first, because quitting (or force-quitting a stuck app) can lose unsaved work. After quitting it checks the app actually stopped. Refuses system processes (Finder, Dock, WindowServer, loginwindow...) |
 | `set_clipboard` | safe | overwrites the clipboard |
 
-No current tool uses `modification` or `dangerous`. Those levels are there for tools that write files or delete things. A new tool picks its level by setting `permission = PermissionLevel.DANGEROUS` (or another level) on its class.
+No current tool uses `dangerous`. That level is there for tools that write files or delete things. A new tool picks its level by setting `permission = PermissionLevel.DANGEROUS` (or another level) on its class.
 
 ## Config
 
