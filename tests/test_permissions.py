@@ -69,3 +69,29 @@ def test_dangerous_always_requires_confirm_even_if_user_would_auto():
     allowed = PermissionManager(cfg, confirm=lambda _p: True).authorize(_DangerTool())
     assert allowed.allowed is True
     assert allowed.confirmed is True
+
+
+def test_close_application_asks_before_quitting():
+    from jarvis.tools.system import CloseApplicationTool
+
+    tool = CloseApplicationTool()
+    assert tool.permission is PermissionLevel.MODIFICATION
+
+    prompts: list[str] = []
+    denied = PermissionManager(PermissionsConfig(), confirm=lambda p: prompts.append(p) or False).authorize(
+        tool, {"application_name": "Notes"}
+    )
+    assert denied.allowed is False and denied.confirmed is True
+    assert "close_application" in prompts[0] and "Notes" in prompts[0]
+
+    allowed = PermissionManager(PermissionsConfig(), confirm=lambda _p: True).authorize(tool, {"application_name": "Notes"})
+    assert allowed.allowed is True
+
+
+def test_shipped_config_confirms_modifications():
+    from pathlib import Path
+
+    import yaml
+
+    config = yaml.safe_load((Path(__file__).resolve().parent.parent / "config.yaml").read_text())
+    assert config["permissions"]["modification_actions"] == "confirm"

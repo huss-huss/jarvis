@@ -14,8 +14,9 @@ memory:
   conversation_limit: 40
 
 permissions:
-  # Auto-allow clipboard edits etc. DANGEROUS actions still always require confirm.
-  modification_actions: allow
+  # "confirm": ask before actions that change things (e.g. closing an app).
+  # "allow": run them without asking. DANGEROUS actions always ask, whatever this says.
+  modification_actions: confirm
   dangerous_actions: confirm
 
 logging:

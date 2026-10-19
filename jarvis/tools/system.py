@@ -399,9 +399,9 @@ class CloseApplicationTool(Tool):
         "Use when the user asks to close/quit an app. "
         "Argument must be application_name. Never claim success unless verified."
     )
-    # SAFE for all apps: action is verified after quit. No confirm prompts.
-    # DANGEROUS tools (delete, etc.) still use voice/text confirmation.
-    permission = PermissionLevel.SAFE
+    # MODIFICATION: quitting (and force-quitting a stuck app) can lose unsaved work,
+    # so it asks first unless permissions.modification_actions is "allow".
+    permission = PermissionLevel.MODIFICATION
     parameters: dict[str, Any] = {
         "type": "object",
         "properties": {
