@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import queue
+import threading
 import time
 from collections.abc import Callable
 
@@ -13,6 +14,9 @@ from jarvis.audio.base import AudioBuffer, VADProvider
 from jarvis.logging import get_logger
 
 log = get_logger(__name__)
+
+# PortAudio on macOS aborts the whole process if two InputStreams open at once.
+AUDIO_DEVICE_LOCK = threading.RLock()
 
 
 class Microphone:
@@ -50,43 +54,53 @@ class Microphone:
         pre_roll_frames = int(pre_roll_seconds * 1000 / frame_ms)
         ring: list[np.ndarray] = []
 
-        with sd.InputStream(
-            samplerate=self.sample_rate,
-            channels=self.channels,
-            dtype="float32",
-            blocksize=frame_size,
-            callback=callback,
-        ):
-            while True:
-                if time.monotonic() - started > max_seconds:
-                    break
-                try:
-                    block = q.get(timeout=0.5)
-                except queue.Empty:
-                    continue
-
-                mono = block.reshape(-1)
-                if mono.size == 0:
-                    continue
-
-                ring.append(mono)
-                if len(ring) > pre_roll_frames and not speech_seen:
-                    ring = ring[-pre_roll_frames:]
-
-                speaking = vad.is_speech(mono, self.sample_rate)
-                if speaking:
-                    if not speech_seen:
-                        chunks.extend(ring)
-                        ring.clear()
-                        speech_seen = True
-                    chunks.append(mono)
-                    silence_started = None
-                elif speech_seen:
-                    chunks.append(mono)
-                    if silence_started is None:
-                        silence_started = time.monotonic()
-                    elif time.monotonic() - silence_started >= silence_seconds:
+        acquired = AUDIO_DEVICE_LOCK.acquire(timeout=8.0)
+        if not acquired:
+            log.warning("mic_busy_timeout")
+            return AudioBuffer(samples=np.zeros(0, dtype=np.float32), sample_rate=self.sample_rate)
+        try:
+            with sd.InputStream(
+                samplerate=self.sample_rate,
+                channels=self.channels,
+                dtype="float32",
+                blocksize=frame_size,
+                callback=callback,
+            ):
+                while True:
+                    if time.monotonic() - started > max_seconds:
                         break
+                    try:
+                        block = q.get(timeout=0.5)
+                    except queue.Empty:
+                        continue
+
+                    mono = block.reshape(-1)
+                    if mono.size == 0:
+                        continue
+
+                    ring.append(mono)
+                    if len(ring) > pre_roll_frames and not speech_seen:
+                        ring = ring[-pre_roll_frames:]
+
+                    speaking = vad.is_speech(mono, self.sample_rate)
+                    if speaking:
+                        if not speech_seen:
+                            chunks.extend(ring)
+                            ring.clear()
+                            speech_seen = True
+                        chunks.append(mono)
+                        silence_started = None
+                    elif speech_seen:
+                        chunks.append(mono)
+                        if silence_started is None:
+                            silence_started = time.monotonic()
+                        elif time.monotonic() - silence_started >= silence_seconds:
+                            break
+        except Exception as exc:  # noqa: BLE001
+            log.warning("mic_record_failed", error=str(exc))
+            return AudioBuffer(samples=np.zeros(0, dtype=np.float32), sample_rate=self.sample_rate)
+        finally:
+            AUDIO_DEVICE_LOCK.release()
 
         if not chunks:
             return AudioBuffer(samples=np.zeros(0, dtype=np.float32), sample_rate=self.sample_rate)

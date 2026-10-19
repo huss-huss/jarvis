@@ -45,3 +45,25 @@ class VADProvider(ABC):
     @abstractmethod
     def is_speech(self, frame: np.ndarray, sample_rate: int) -> bool:
         raise NotImplementedError
+
+
+@dataclass
+class WakeEvent:
+    source: str  # "wake_word" | "hotkey" | "manual"
+    label: str | None = None
+    score: float | None = None
+
+
+class WakeWordProvider(ABC):
+    @abstractmethod
+    def start(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def stop(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def wait_for_wake(self, timeout: float | None = None) -> WakeEvent | None:
+        """Block until wake detected or timeout. None = timeout."""
+        raise NotImplementedError

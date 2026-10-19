@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JARVIS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/app.css?v=4" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <aside class="rail">
+    <div class="brand">
+      <p class="brand-mark">JARVIS</p>
+      <p class="brand-sub">Local assistant</p>
+    </div>
+
+    <div class="status-block">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusLabel">Connecting…</span>
+    </div>
+
+    <div class="caps" id="caps"></div>
+
+    <div class="rail-meta">
+      <p><span>Model</span> <strong id="modelName">—</strong></p>
+      <p><span>RAG</span> <strong id="ragProject">—</strong></p>
+    </div>
+
+    <button type="button" class="ghost" id="newChatBtn">New conversation</button>
+  </aside>
+
+  <main class="stage">
+    <header class="stage-head">
+      <h1>Conversation</h1>
+      <p class="hint">Voice-first · Talk, wake word, or type when you want.</p>
+    </header>
+
+    <section class="transcript" id="transcript" aria-live="polite"></section>
+
+    <form class="composer" id="composer">
+      <textarea id="input" rows="2" placeholder="Ask Jarvis… or press Talk" autofocus></textarea>
+      <button type="button" class="talk" id="talkBtn">Talk</button>
+      <button type="button" class="stop" id="stopBtn" hidden>Stop</button>
+      <button type="submit" id="sendBtn">Send</button>
+    </form>
+    <p class="wake-hint" id="wakeHint">Connecting to Jarvis…</p>
+  </main>
+
+  <aside class="side">
+    <section>
+      <h2>Activity</h2>
+      <ul class="feed" id="toolFeed"></ul>
+    </section>
+    <section>
+      <h2>Reminders</h2>
+      <ul class="list" id="reminderList"></ul>
+    </section>
+    <section>
+      <h2>Tasks</h2>
+      <ul class="list" id="taskList"></ul>
+    </section>
+  </aside>
+
+  <div class="toast-stack" id="toasts"></div>
+
+  <dialog class="confirm" id="confirmDialog">
+    <form method="dialog" id="confirmForm">
+      <h2>Confirm action</h2>
+      <p id="confirmPrompt"></p>
+      <div class="confirm-actions">
+        <button type="submit" value="deny" class="ghost">Deny</button>
+        <button type="submit" value="allow" class="danger">Allow</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/static/app.js?v=4"></script>
+</body>
+</html>

@@ -35,8 +35,14 @@ class PermissionManager:
         self.voice_style = voice_style
 
     def authorize(self, tool: Tool, arguments: dict[str, Any] | None = None) -> PermissionDecision:
-        level = tool.permission
         args = arguments or {}
+        level = tool.permission
+        permission_for = getattr(tool, "permission_for", None)
+        if callable(permission_for):
+            try:
+                level = permission_for(**args)
+            except TypeError:
+                level = tool.permission
         summary = f"{tool.name}({_format_args(args)})"
 
         if level is PermissionLevel.SAFE:
