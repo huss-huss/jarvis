@@ -5,8 +5,12 @@ from __future__ import annotations
 import queue
 import time
 
-from jarvis.audio.base import WakeEvent
-from jarvis.audio.wakeword import ActivationMonitor
+import pytest
+
+pytest.importorskip("numpy", reason="needs the `voice` extra: pip install -e '.[voice]'")
+
+from jarvis.audio.base import WakeEvent  # noqa: E402
+from jarvis.audio.wakeword import ActivationMonitor  # noqa: E402
 
 
 class _FakeWake:

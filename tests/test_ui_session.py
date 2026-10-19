@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-from jarvis.config import JarvisConfig
-from jarvis.ui.session import DesktopSession
+import pytest
+
+pytest.importorskip("numpy", reason="needs the `voice` extra: pip install -e '.[voice]'")
+
+from jarvis.config import JarvisConfig  # noqa: E402
+from jarvis.ui.session import DesktopSession  # noqa: E402
 
 
 class _FakeMemory:
