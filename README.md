@@ -4,6 +4,27 @@ Local-first personal AI assistant for macOS (Apple Silicon).
 
 **Cost:** $0/month for core operation. Uses local [Ollama](https://ollama.com) — no OpenAI, Anthropic, or other paid APIs required.
 
+## Architecture
+
+```mermaid
+flowchart LR
+    Mic["Microphone"] --> Wake["Wake word<br/>openWakeWord / Ctrl+Alt+J"]
+    Wake --> VAD["Silero VAD"]
+    VAD --> STT["whisper.cpp STT"]
+    Text["Terminal / Desktop UI<br/>text input"] --> Agent
+    STT --> Agent["AgentOrchestrator<br/>tool-calling agent"]
+    Agent <--> LLM["Ollama<br/>local LLM"]
+    Agent --> Perm{"PermissionManager<br/>safe / modification / dangerous"}
+    Perm --> Tools["ToolRegistry"]
+    Tools --> Computer["Files · Terminal · Browser<br/>(Playwright)"]
+    Tools --> Memory["SQLite memory<br/>facts · episodic · semantic recall"]
+    Tools --> RAG["Local RAG<br/>ingest · chunk · embed · search"]
+    Tools --> Prod["Reminders · Tasks · Calendar"]
+    Agent --> TTS["Kokoro TTS<br/>macOS say fallback"]
+```
+
+Everything runs on the Mac. Voice input passes through wake word, VAD and whisper.cpp before reaching the same agent the text shells use. The agent plans tool calls with a local Ollama model, and every call goes through `PermissionManager` before a tool runs. Replies are spoken with Kokoro, or macOS `say` as a fallback.
+
 ## Phase 1 — Text
 
 Terminal assistant with streaming Ollama chat, tools, permissions, SQLite history.
